@@ -125,7 +125,9 @@ def main():
 
         if history is not None:
             st.write(f"Prijshistorie voor onderdeelnummer {onderdeelnummer}:")
-            st.write(history)
+            history.index = range(1, len(history) + 1)
+            st.dataframe(history)
+
         else:
             st.write(f"Geen resultaten gevonden voor onderdeelnummer {onderdeelnummer}.")
 
