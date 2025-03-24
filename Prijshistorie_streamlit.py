@@ -103,6 +103,10 @@ class APIClient:
         if history.empty:
             return None
         
+        history['Factuurdatum'] = pd.to_datetime(history['Factuurdatum'], dayfirst=True, errors='coerce')
+        history = history.sort_values(by='Factuurdatum', ascending=False)
+        history['Factuurdatum'] = history['Factuurdatum'].dt.strftime('%d-%m-%Y')
+
         return history
 
 
@@ -112,24 +116,25 @@ def load_data():
     client = APIClient()
     return client.get_parts()
 
+
 def main():
-    st.title("Prijshistorie van onderdelen")
+    st.title('Prijshistorie van onderdelen')
 
     data = load_data()
 
-    onderdeelnummer = st.text_input("Voer het onderdeelnummer in:")
+    onderdeelnummer = st.text_input('Voer het onderdeelnummer in:')
 
     if onderdeelnummer:
         client = APIClient()
         history = client.get_price_history(data, onderdeelnummer)
 
         if history is not None:
-            st.write(f"Prijshistorie voor onderdeelnummer {onderdeelnummer}:")
+            st.write(f'Prijshistorie voor onderdeelnummer {onderdeelnummer}:')
             history.index = range(1, len(history) + 1)
             st.dataframe(history)
 
         else:
-            st.write(f"Geen resultaten gevonden voor onderdeelnummer {onderdeelnummer}.")
+            st.write(f'Geen resultaten gevonden voor onderdeelnummer {onderdeelnummer}.')
 
 
 if __name__ == '__main__':
