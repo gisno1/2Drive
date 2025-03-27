@@ -109,6 +109,7 @@ class APIClient:
 
         return history
 
+xyz = 'Kuijpers2025@'
 
 @st.cache_data
 def load_data():
@@ -119,7 +120,25 @@ def load_data():
 
 def main():
     st.title('Prijshistorie van onderdelen')
+    
+    correct_password = st.secrets["auth"]["password"]
 
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if not st.session_state.authenticated:
+
+        password_input = st.text_input("Voer het wachtwoord in:", type="password")
+
+        if st.button("Inloggen"):
+            if password_input == correct_password:
+                st.session_state.authenticated = True
+                st.rerun()  
+            else:
+                st.warning("Onjuist wachtwoord. Probeer opnieuw.")
+                st.session_state.authenticated = False
+        return  
+    
     data = load_data()
 
     onderdeelnummer = st.text_input('Voer het onderdeelnummer in:')
