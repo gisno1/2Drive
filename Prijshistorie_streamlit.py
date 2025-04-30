@@ -109,7 +109,6 @@ class APIClient:
 
         return history
 
-xyz = 'Kuijpers2025@'
 
 @st.cache_data
 def load_data():
