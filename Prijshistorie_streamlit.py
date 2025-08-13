@@ -73,13 +73,15 @@ class APIClient:
         
         wo_259 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=259')[['WONUMMER', 'InvoicedDate']]
         wo_261 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=261')[['WONUMMER', 'InvoicedDate']]
+        wo_467 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=467')[['WONUMMER', 'InvoicedDate']]
 
         onderdelen_259 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=259').merge(wo_259, on='WONUMMER', how='left')
         onderdelen_261 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=261').merge(wo_261, on='WONUMMER', how='left')
+        onderdelen_467 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=467').merge(wo_467, on='WONUMMER', how='left')
 
-        df = pd.concat([onderdelen_259, onderdelen_261], ignore_index=True)
+        df = pd.concat([onderdelen_259, onderdelen_261, onderdelen_467], ignore_index=True)
 
-        affiliate_mapping = {259: 'Tilburg', 261: 'Rotterdam'}
+        affiliate_mapping = {259: 'Tilburg', 261: 'Rotterdam', 467: 'Heerhugowaard'}
         df['AffiliateId'] = df['AffiliateId'].replace(affiliate_mapping)
 
         df['InvoicedDate'] = pd.to_datetime(df['InvoicedDate'], errors='coerce').dt.strftime('%d-%m-%Y')
