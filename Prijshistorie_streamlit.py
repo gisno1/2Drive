@@ -21,7 +21,8 @@ class APIClient:
 
     def get_token(self):
         """Haalt een nieuw access token op bij Auth0 als het huidige token verlopen is."""
-        
+        st.write("🔐 Nieuw token opgehaald")
+
         if self.access_token and time.time() < self.token_expiry:
             return self.access_token  
 
