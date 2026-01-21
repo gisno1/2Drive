@@ -226,7 +226,7 @@ def get_api_client():
 @st.cache_data(ttl=3600)
 def load_data():
     """Laadt de data eenmalig en cache deze."""
-    client = get_api_client
+    client = get_api_client()
     return client.get_parts()
 
 
