@@ -92,7 +92,7 @@ class APIClient:
         #         return self.empty_df(columns or [])
         #     return df
 
-        def safe_get(endpoint, columns=None, label="", retries=3, delay=2):
+        def safe_get(endpoint, columns=None, label="", retries=4, delay=2):
             for attempt in range(1, retries + 1):
                 df = self.get_data(endpoint)
 
@@ -100,7 +100,7 @@ class APIClient:
                     return df
 
                 if attempt < retries:
-                    st.info(f"🔄 {label}: poging {attempt + 1} van {retries}...")
+                    #st.info(f"🔄 {label}: poging {attempt + 1} van {retries}...")
                     time.sleep(delay * attempt)  # exponential backoff
 
             st.warning(f"⚠️ Geen data ontvangen voor {label} na {retries} pogingen")
