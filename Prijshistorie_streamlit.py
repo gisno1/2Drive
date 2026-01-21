@@ -45,52 +45,28 @@ class APIClient:
             return None
 
 
-    # def get_data(self, endpoint):
-    #     """Maakt een GET-aanroep naar het opgegeven API-endpoint."""
+    def get_data(self, endpoint):
+        """Maakt een GET-aanroep naar het opgegeven API-endpoint."""
         
-    #     token = self.get_token()
-    #     if not token:
-    #         print('Geen geldig token beschikbaar. Kan de API niet aanroepen.')
-    #         return None
-
-    #     try:
-    #         response = requests.get(
-    #             f'{self.api_base_url}/{endpoint}',
-    #             headers={'Authorization': f'Bearer {token}'}
-    #         )
-
-    #         response.raise_for_status()
-    #         data = response.json() 
-    #         return pd.DataFrame(data.get('value', [])) 
-        
-    #     except requests.exceptions.RequestException as e:
-    #         print(f'Fout bij ophalen data van {endpoint}: {e}')
-    #         return None
-        
-    def get_data(self, endpoint, retries=3, delay=1):
         token = self.get_token()
         if not token:
-            st.error("❌ Geen geldig token beschikbaar.")
+            print('Geen geldig token beschikbaar. Kan de API niet aanroepen.')
             return None
 
-        for attempt in range(1, retries + 1):
-            try:
-                response = requests.get(
-                    f'{self.api_base_url}/{endpoint}',
-                    headers={'Authorization': f'Bearer {token}'},
-                    timeout=30
-                )
+        try:
+            response = requests.get(
+                f'{self.api_base_url}/{endpoint}',
+                headers={'Authorization': f'Bearer {token}'}
+            )
 
-                response.raise_for_status()
-                data = response.json()
-                return pd.DataFrame(data.get('value', []))
-
-            except requests.exceptions.RequestException as e:
-                if attempt == retries:
-                    st.warning(f"⚠️ {endpoint} faalt na {retries} pogingen")
-                    return None
-
-                time.sleep(delay * attempt)  # exponential backoff
+            response.raise_for_status()
+            data = response.json() 
+            return pd.DataFrame(data.get('value', [])) 
+        
+        except requests.exceptions.RequestException as e:
+            print(f'Fout bij ophalen data van {endpoint}: {e}')
+            return None
+        
 
 
     def empty_df(self, columns):
@@ -139,13 +115,21 @@ class APIClient:
             return df
 
         # Workorders
+        wo_467 = safe_get(
+            'GetAftersalesForAffiliateExtended?AffiliateId=467',
+            ['WONUMMER', 'InvoicedDate'],
+            'Werkorders Heerhugowaard'
+        )[['WONUMMER', 'InvoicedDate']]
+
+        time.sleep(0.5)
+
         wo_259 = safe_get(
             'GetAftersalesForAffiliateExtended?AffiliateId=259',
             ['WONUMMER', 'InvoicedDate'],
             'Werkorders Tilburg'
         )[['WONUMMER', 'InvoicedDate']]
 
-        time.sleep(0.3)
+        time.sleep(0.5)
 
         wo_261 = safe_get(
             'GetAftersalesForAffiliateExtended?AffiliateId=261',
@@ -153,15 +137,17 @@ class APIClient:
             'Werkorders Rotterdam'
         )[['WONUMMER', 'InvoicedDate']]
 
-        time.sleep(0.3)
+   
 
-        wo_467 = safe_get(
-            'GetAftersalesForAffiliateExtended?AffiliateId=467',
-            ['WONUMMER', 'InvoicedDate'],
-            'Werkorders Heerhugowaard'
-        )[['WONUMMER', 'InvoicedDate']]
+
 
         # Onderdelen
+        onderdelen_467 = safe_get(
+            'GetAftersalesPartsForAffiliateExtended?AffiliateId=467',
+            ['WONUMMER', 'AffiliateId'],
+            'Onderdelen Heerhugowaard'
+        ).merge(wo_467, on='WONUMMER', how='left')
+        
         onderdelen_259 = safe_get(
             'GetAftersalesPartsForAffiliateExtended?AffiliateId=259',
             ['WONUMMER', 'AffiliateId'],
@@ -174,11 +160,7 @@ class APIClient:
             'Onderdelen Rotterdam'
         ).merge(wo_261, on='WONUMMER', how='left')
 
-        onderdelen_467 = safe_get(
-            'GetAftersalesPartsForAffiliateExtended?AffiliateId=467',
-            ['WONUMMER', 'AffiliateId'],
-            'Onderdelen Heerhugowaard'
-        ).merge(wo_467, on='WONUMMER', how='left')
+
 
         df = pd.concat(
             [onderdelen_259, onderdelen_261, onderdelen_467],
