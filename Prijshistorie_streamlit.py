@@ -67,34 +67,121 @@ class APIClient:
             print(f'Fout bij ophalen data van {endpoint}: {e}')
             return None
         
+    
+    def empty_df(self, columns):
+        """Geeft een lege DataFrame met vaste kolommen terug."""
+        return pd.DataFrame(columns=columns)
+
+        
+
+    # def get_parts(self):
+    #     """Haalt onderdelen op en voegt de InvoicedDate toe."""
+        
+    #     wo_259 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=259')[['WONUMMER', 'InvoicedDate']]
+    #     wo_261 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=261')[['WONUMMER', 'InvoicedDate']]
+    #     wo_467 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=467')[['WONUMMER', 'InvoicedDate']]
+
+    #     onderdelen_259 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=259').merge(wo_259, on='WONUMMER', how='left')
+    #     onderdelen_261 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=261').merge(wo_261, on='WONUMMER', how='left')
+    #     onderdelen_467 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=467').merge(wo_467, on='WONUMMER', how='left')
+
+    #     df = pd.concat([onderdelen_259, onderdelen_261, onderdelen_467], ignore_index=True)
+
+    #     affiliate_mapping = {259: 'Tilburg', 261: 'Rotterdam', 467: 'Heerhugowaard'}
+    #     df['AffiliateId'] = df['AffiliateId'].replace(affiliate_mapping)
+
+    #     df['InvoicedDate'] = pd.to_datetime(df['InvoicedDate'], errors='coerce').dt.strftime('%d-%m-%Y')
+        
+    #     df = df.rename(columns={
+    #         'PartNumber': 'Onderdeelnummer',
+    #         'Price': 'Verkoopprijs',
+    #         'CompanyName': 'Relatie',
+    #         'AffiliateId': 'Vestiging',
+    #         'InvoicedDate': 'Factuurdatum'
+    #         })
+        
+    #     return df
+
 
     def get_parts(self):
         """Haalt onderdelen op en voegt de InvoicedDate toe."""
-        
-        wo_259 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=259')[['WONUMMER', 'InvoicedDate']]
-        wo_261 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=261')[['WONUMMER', 'InvoicedDate']]
-        wo_467 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=467')[['WONUMMER', 'InvoicedDate']]
 
-        onderdelen_259 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=259').merge(wo_259, on='WONUMMER', how='left')
-        onderdelen_261 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=261').merge(wo_261, on='WONUMMER', how='left')
-        onderdelen_467 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=467').merge(wo_467, on='WONUMMER', how='left')
+        def safe_get(endpoint, columns=None, label=""):
+            df = self.get_data(endpoint)
+            if df is None:
+                st.warning(f"⚠️ Geen data ontvangen voor {label}")
+                return self.empty_df(columns or [])
+            return df
 
-        df = pd.concat([onderdelen_259, onderdelen_261, onderdelen_467], ignore_index=True)
+        # Workorders
+        wo_259 = safe_get(
+            'GetAftersalesForAffiliateExtended?AffiliateId=259',
+            ['WONUMMER', 'InvoicedDate'],
+            'Werkorders Tilburg'
+        )[['WONUMMER', 'InvoicedDate']]
 
-        affiliate_mapping = {259: 'Tilburg', 261: 'Rotterdam', 467: 'Heerhugowaard'}
+        wo_261 = safe_get(
+            'GetAftersalesForAffiliateExtended?AffiliateId=261',
+            ['WONUMMER', 'InvoicedDate'],
+            'Werkorders Rotterdam'
+        )[['WONUMMER', 'InvoicedDate']]
+
+        wo_467 = safe_get(
+            'GetAftersalesForAffiliateExtended?AffiliateId=467',
+            ['WONUMMER', 'InvoicedDate'],
+            'Werkorders Heerhugowaard'
+        )[['WONUMMER', 'InvoicedDate']]
+
+        # Onderdelen
+        onderdelen_259 = safe_get(
+            'GetAftersalesPartsForAffiliateExtended?AffiliateId=259',
+            ['WONUMMER', 'AffiliateId'],
+            'Onderdelen Tilburg'
+        ).merge(wo_259, on='WONUMMER', how='left')
+
+        onderdelen_261 = safe_get(
+            'GetAftersalesPartsForAffiliateExtended?AffiliateId=261',
+            ['WONUMMER', 'AffiliateId'],
+            'Onderdelen Rotterdam'
+        ).merge(wo_261, on='WONUMMER', how='left')
+
+        onderdelen_467 = safe_get(
+            'GetAftersalesPartsForAffiliateExtended?AffiliateId=467',
+            ['WONUMMER', 'AffiliateId'],
+            'Onderdelen Heerhugowaard'
+        ).merge(wo_467, on='WONUMMER', how='left')
+
+        df = pd.concat(
+            [onderdelen_259, onderdelen_261, onderdelen_467],
+            ignore_index=True
+        )
+
+        if df.empty:
+            st.warning("⚠️ Er is geen enkele onderdelen-data beschikbaar.")
+            return df
+
+        affiliate_mapping = {
+            259: 'Tilburg',
+            261: 'Rotterdam',
+            467: 'Heerhugowaard'
+        }
+
         df['AffiliateId'] = df['AffiliateId'].replace(affiliate_mapping)
 
-        df['InvoicedDate'] = pd.to_datetime(df['InvoicedDate'], errors='coerce').dt.strftime('%d-%m-%Y')
-        
+        df['InvoicedDate'] = pd.to_datetime(
+            df['InvoicedDate'], errors='coerce'
+        ).dt.strftime('%d-%m-%Y')
+
         df = df.rename(columns={
             'PartNumber': 'Onderdeelnummer',
             'Price': 'Verkoopprijs',
             'CompanyName': 'Relatie',
             'AffiliateId': 'Vestiging',
             'InvoicedDate': 'Factuurdatum'
-            })
-        
+        })
+
         return df
+
 
 
     def get_price_history(self, df, onderdeelnummer):
@@ -141,6 +228,11 @@ def main():
         return  
     
     data = load_data()
+    
+    if data is None or data.empty:
+        st.error("❌ Geen data beschikbaar. Probeer het later opnieuw.")
+        return
+
 
     onderdeelnummer = st.text_input('Voer het onderdeelnummer in:')
 
