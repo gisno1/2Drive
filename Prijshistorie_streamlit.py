@@ -21,7 +21,7 @@ class APIClient:
 
     def get_token(self):
         """Haalt een nieuw access token op bij Auth0 als het huidige token verlopen is."""
-        st.write("🔐 Nieuw token opgehaald")
+
 
         if self.access_token and time.time() < self.token_expiry:
             return self.access_token  
@@ -218,12 +218,15 @@ class APIClient:
 
         return history
 
+@st.cache_resource
+def get_api_client():
+    return APIClient()
 
 # @st.cache_data
 @st.cache_data(ttl=3600)
 def load_data():
     """Laadt de data eenmalig en cache deze."""
-    client = APIClient()
+    client = get_api_client
     return client.get_parts()
 
 
@@ -258,7 +261,7 @@ def main():
     onderdeelnummer = st.text_input('Voer het onderdeelnummer in:')
 
     if onderdeelnummer:
-        client = APIClient()
+        client = get_api_client()
         history = client.get_price_history(data, onderdeelnummer)
 
         if history is not None:
