@@ -45,29 +45,54 @@ class APIClient:
             return None
 
 
-    def get_data(self, endpoint):
-        """Maakt een GET-aanroep naar het opgegeven API-endpoint."""
+    # def get_data(self, endpoint):
+    #     """Maakt een GET-aanroep naar het opgegeven API-endpoint."""
         
+    #     token = self.get_token()
+    #     if not token:
+    #         print('Geen geldig token beschikbaar. Kan de API niet aanroepen.')
+    #         return None
+
+    #     try:
+    #         response = requests.get(
+    #             f'{self.api_base_url}/{endpoint}',
+    #             headers={'Authorization': f'Bearer {token}'}
+    #         )
+
+    #         response.raise_for_status()
+    #         data = response.json() 
+    #         return pd.DataFrame(data.get('value', [])) 
+        
+    #     except requests.exceptions.RequestException as e:
+    #         print(f'Fout bij ophalen data van {endpoint}: {e}')
+    #         return None
+        
+    def get_data(self, endpoint, retries=3, delay=1):
         token = self.get_token()
         if not token:
-            print('Geen geldig token beschikbaar. Kan de API niet aanroepen.')
+            st.error("❌ Geen geldig token beschikbaar.")
             return None
 
-        try:
-            response = requests.get(
-                f'{self.api_base_url}/{endpoint}',
-                headers={'Authorization': f'Bearer {token}'}
-            )
+        for attempt in range(1, retries + 1):
+            try:
+                response = requests.get(
+                    f'{self.api_base_url}/{endpoint}',
+                    headers={'Authorization': f'Bearer {token}'},
+                    timeout=30
+                )
 
-            response.raise_for_status()
-            data = response.json() 
-            return pd.DataFrame(data.get('value', [])) 
-        
-        except requests.exceptions.RequestException as e:
-            print(f'Fout bij ophalen data van {endpoint}: {e}')
-            return None
-        
-    
+                response.raise_for_status()
+                data = response.json()
+                return pd.DataFrame(data.get('value', []))
+
+            except requests.exceptions.RequestException as e:
+                if attempt == retries:
+                    st.warning(f"⚠️ {endpoint} faalt na {retries} pogingen")
+                    return None
+
+                time.sleep(delay * attempt)  # exponential backoff
+
+
     def empty_df(self, columns):
         """Geeft een lege DataFrame met vaste kolommen terug."""
         return pd.DataFrame(columns=columns)
@@ -120,11 +145,15 @@ class APIClient:
             'Werkorders Tilburg'
         )[['WONUMMER', 'InvoicedDate']]
 
+        time.sleep(0.3)
+
         wo_261 = safe_get(
             'GetAftersalesForAffiliateExtended?AffiliateId=261',
             ['WONUMMER', 'InvoicedDate'],
             'Werkorders Rotterdam'
         )[['WONUMMER', 'InvoicedDate']]
+
+        time.sleep(0.3)
 
         wo_467 = safe_get(
             'GetAftersalesForAffiliateExtended?AffiliateId=467',
@@ -199,7 +228,8 @@ class APIClient:
         return history
 
 
-@st.cache_data
+# @st.cache_data
+@st.cache_data(ttl=3600)
 def load_data():
     """Laadt de data eenmalig en cache deze."""
     client = APIClient()
@@ -228,7 +258,7 @@ def main():
         return  
     
     data = load_data()
-    
+
     if data is None or data.empty:
         st.error("❌ Geen data beschikbaar. Probeer het later opnieuw.")
         return
