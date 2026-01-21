@@ -107,22 +107,28 @@ class APIClient:
     def get_parts(self):
         """Haalt onderdelen op en voegt de InvoicedDate toe."""
 
-        def safe_get(endpoint, columns=None, label=""):
-            df = self.get_data(endpoint)
-            if df is None:
-                st.warning(f"⚠️ Geen data ontvangen voor {label}")
-                return self.empty_df(columns or [])
-            return df
+        # def safe_get(endpoint, columns=None, label=""):
+        #     df = self.get_data(endpoint)
+        #     if df is None:
+        #         st.warning(f"⚠️ Geen data ontvangen voor {label}")
+        #         return self.empty_df(columns or [])
+        #     return df
+
+        def safe_get(endpoint, columns=None, label="", retries=3, delay=1):
+            for attempt in range(1, retries + 1):
+                df = self.get_data(endpoint)
+
+                if df is not None:
+                    return df
+
+                if attempt < retries:
+                    st.info(f"🔄 {label}: poging {attempt + 1} van {retries}...")
+                    time.sleep(delay * attempt)  # exponential backoff
+
+            st.warning(f"⚠️ Geen data ontvangen voor {label} na {retries} pogingen")
+            return self.empty_df(columns or [])
 
         # Workorders
-        wo_467 = safe_get(
-            'GetAftersalesForAffiliateExtended?AffiliateId=467',
-            ['WONUMMER', 'InvoicedDate'],
-            'Werkorders Heerhugowaard'
-        )[['WONUMMER', 'InvoicedDate']]
-
-        time.sleep(0.5)
-
         wo_259 = safe_get(
             'GetAftersalesForAffiliateExtended?AffiliateId=259',
             ['WONUMMER', 'InvoicedDate'],
@@ -137,17 +143,15 @@ class APIClient:
             'Werkorders Rotterdam'
         )[['WONUMMER', 'InvoicedDate']]
 
-   
+        time.sleep(0.5)
 
-
+        wo_467 = safe_get(
+            'GetAftersalesForAffiliateExtended?AffiliateId=467',
+            ['WONUMMER', 'InvoicedDate'],
+            'Werkorders Heerhugowaard'
+        )[['WONUMMER', 'InvoicedDate']]
 
         # Onderdelen
-        onderdelen_467 = safe_get(
-            'GetAftersalesPartsForAffiliateExtended?AffiliateId=467',
-            ['WONUMMER', 'AffiliateId'],
-            'Onderdelen Heerhugowaard'
-        ).merge(wo_467, on='WONUMMER', how='left')
-        
         onderdelen_259 = safe_get(
             'GetAftersalesPartsForAffiliateExtended?AffiliateId=259',
             ['WONUMMER', 'AffiliateId'],
@@ -160,7 +164,11 @@ class APIClient:
             'Onderdelen Rotterdam'
         ).merge(wo_261, on='WONUMMER', how='left')
 
-
+        onderdelen_467 = safe_get(
+            'GetAftersalesPartsForAffiliateExtended?AffiliateId=467',
+            ['WONUMMER', 'AffiliateId'],
+            'Onderdelen Heerhugowaard'
+        ).merge(wo_467, on='WONUMMER', how='left')
 
         df = pd.concat(
             [onderdelen_259, onderdelen_261, onderdelen_467],
