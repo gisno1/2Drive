@@ -22,8 +22,8 @@ class APIClient:
     def get_token(self):
         """Haalt een nieuw access token op bij Auth0 als het huidige token verlopen is."""
 
-
         if self.access_token and time.time() < self.token_expiry:
+            
             return self.access_token  
 
         try:
@@ -43,7 +43,9 @@ class APIClient:
         
         except requests.exceptions.RequestException as e:
             print(f'Fout bij ophalen token: {e}')
+            
             return None
+
 
 
     def get_data(self, endpoint):
@@ -52,6 +54,7 @@ class APIClient:
         token = self.get_token()
         if not token:
             print('Geen geldig token beschikbaar. Kan de API niet aanroepen.')
+            
             return None
 
         try:
@@ -62,47 +65,21 @@ class APIClient:
 
             response.raise_for_status()
             data = response.json() 
+            
             return pd.DataFrame(data.get('value', [])) 
         
         except requests.exceptions.RequestException as e:
             print(f'Fout bij ophalen data van {endpoint}: {e}')
+            
             return None
         
 
 
     def empty_df(self, columns):
         """Geeft een lege DataFrame met vaste kolommen terug."""
+        
         return pd.DataFrame(columns=columns)
 
-        
-
-    # def get_parts(self):
-    #     """Haalt onderdelen op en voegt de InvoicedDate toe."""
-        
-    #     wo_259 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=259')[['WONUMMER', 'InvoicedDate']]
-    #     wo_261 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=261')[['WONUMMER', 'InvoicedDate']]
-    #     wo_467 = self.get_data('GetAftersalesForAffiliateExtended?AffiliateId=467')[['WONUMMER', 'InvoicedDate']]
-
-    #     onderdelen_259 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=259').merge(wo_259, on='WONUMMER', how='left')
-    #     onderdelen_261 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=261').merge(wo_261, on='WONUMMER', how='left')
-    #     onderdelen_467 = self.get_data('GetAftersalesPartsForAffiliateExtended?AffiliateId=467').merge(wo_467, on='WONUMMER', how='left')
-
-    #     df = pd.concat([onderdelen_259, onderdelen_261, onderdelen_467], ignore_index=True)
-
-    #     affiliate_mapping = {259: 'Tilburg', 261: 'Rotterdam', 467: 'Heerhugowaard'}
-    #     df['AffiliateId'] = df['AffiliateId'].replace(affiliate_mapping)
-
-    #     df['InvoicedDate'] = pd.to_datetime(df['InvoicedDate'], errors='coerce').dt.strftime('%d-%m-%Y')
-        
-    #     df = df.rename(columns={
-    #         'PartNumber': 'Onderdeelnummer',
-    #         'Price': 'Verkoopprijs',
-    #         'CompanyName': 'Relatie',
-    #         'AffiliateId': 'Vestiging',
-    #         'InvoicedDate': 'Factuurdatum'
-    #         })
-        
-    #     return df
 
 
     def get_parts(self):
@@ -115,7 +92,7 @@ class APIClient:
         #         return self.empty_df(columns or [])
         #     return df
 
-        def safe_get(endpoint, columns=None, label="", retries=3, delay=1):
+        def safe_get(endpoint, columns=None, label="", retries=3, delay=2):
             for attempt in range(1, retries + 1):
                 df = self.get_data(endpoint)
 
@@ -127,6 +104,7 @@ class APIClient:
                     time.sleep(delay * attempt)  # exponential backoff
 
             st.warning(f"⚠️ Geen data ontvangen voor {label} na {retries} pogingen")
+            
             return self.empty_df(columns or [])
 
         # Workorders
@@ -136,7 +114,7 @@ class APIClient:
             'Werkorders Tilburg'
         )[['WONUMMER', 'InvoicedDate']]
 
-        time.sleep(0.5)
+        time.sleep(1)
 
         wo_261 = safe_get(
             'GetAftersalesForAffiliateExtended?AffiliateId=261',
@@ -203,7 +181,6 @@ class APIClient:
         return df
 
 
-
     def get_price_history(self, df, onderdeelnummer):
         """Geeft de prijs historie van een onderdeelnummer weer."""
         
@@ -222,7 +199,7 @@ class APIClient:
 def get_api_client():
     return APIClient()
 
-# @st.cache_data
+
 @st.cache_data(ttl=3600)
 def load_data():
     """Laadt de data eenmalig en cache deze."""
