@@ -53,31 +53,53 @@ class APIClient:
 
 
 
-    def get_data(self, endpoint):
-        """Maakt een GET-aanroep naar het opgegeven API-endpoint."""
+    # def get_data(self, endpoint):
+    #     """Maakt een GET-aanroep naar het opgegeven API-endpoint."""
         
+    #     token = self.get_token()
+    #     if not token:
+    #         print('Geen geldig token beschikbaar. Kan de API niet aanroepen.')
+            
+    #         return None
+
+    #     try:
+    #         response = requests.get(
+    #             f'{self.api_base_url}/{endpoint}',
+    #             headers={'Authorization': f'Bearer {token}'}
+    #         )
+
+    #         response.raise_for_status()
+    #         data = response.json() 
+            
+    #         return pd.DataFrame(data.get('value', [])) 
+        
+    #     except requests.exceptions.RequestException as e:
+    #         print(f'Fout bij ophalen data van {endpoint}: {e}')
+            
+    #         return None
+    
+    def get_data(self, endpoint, retries=3, delay=1):
         token = self.get_token()
         if not token:
             print('Geen geldig token beschikbaar. Kan de API niet aanroepen.')
-            
             return None
 
-        try:
-            response = requests.get(
-                f'{self.api_base_url}/{endpoint}',
-                headers={'Authorization': f'Bearer {token}'}
-            )
+        for attempt in range(retries):
+            try:
+                response = requests.get(
+                    f'{self.api_base_url}/{endpoint}',
+                    headers={'Authorization': f'Bearer {token}'}
+                )
+                response.raise_for_status()
+                data = response.json()
+                return pd.DataFrame(data.get('value', []))
 
-            response.raise_for_status()
-            data = response.json() 
-            
-            return pd.DataFrame(data.get('value', [])) 
-        
-        except requests.exceptions.RequestException as e:
-            print(f'Fout bij ophalen data van {endpoint}: {e}')
-            
-            return None
-        
+            except requests.exceptions.RequestException as e:
+                print(f'Poging {attempt+1} mislukt bij {endpoint}: {e}')
+                time.sleep(delay)
+
+        st.warning(f"⚠️ Kan geen data ophalen van {endpoint} na {retries} pogingen")
+        return None
 
 
     def empty_df(self, columns):
@@ -168,8 +190,7 @@ def main():
 
         if st.button("Inloggen"):
             if password_input == correct_password:
-                st.session_state.authenticated = True
-                # st.experimental_rerun()  
+                st.session_state.authenticated = True  
                 st.rerun() 
             else:
                 st.warning("Onjuist wachtwoord. Probeer opnieuw.")
