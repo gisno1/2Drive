@@ -8,13 +8,18 @@ class APIClient:
     def __init__(self):
         self.api_base_url = 'https://app-2drive-dab2-100330.proudwave-fe47a2ed.westeurope.azurecontainerapps.io/api'
         self.auth_url = 'https://vinacles.eu.auth0.com/oauth/token'
+        # self.auth_credentials = {
+        #     'client_id': 'NlZMoM5v9XBGMpXrRKzqgzzviSZUs9Dp',
+        #     'client_secret': 's_qkClB-Ms8Kzzd17HftdZVHeR1lnp9QWFyroJ0PRNIkN0cxieJm9Mc8YeJ82YYZ',
+        #     'audience': 'api:vinalces.dab.100330',
+        #     'grant_type': 'client_credentials'
+        # }
         self.auth_credentials = {
-            'client_id': 'NlZMoM5v9XBGMpXrRKzqgzzviSZUs9Dp',
-            'client_secret': 's_qkClB-Ms8Kzzd17HftdZVHeR1lnp9QWFyroJ0PRNIkN0cxieJm9Mc8YeJ82YYZ',
-            'audience': 'api:vinalces.dab.100330',
-            'grant_type': 'client_credentials'
+            'client_id': st.secrets["auth"]["client_id"],
+            'client_secret': st.secrets["auth"]["client_secret"],
+            'audience': st.secrets["auth"]["audience"],
+            'grant_type': st.secrets["auth"]["grant_type"]
         }
-        
         self.access_token = None
         self.token_expiry = None  
 
@@ -177,10 +182,16 @@ def main():
         "Heerhugowaard": 467
     }
 
+    vestigingen = ["— Kies een vestiging —"] + list(affiliate_map.keys())
+
     vestiging = st.selectbox(
         "Kies een vestiging",
-        list(affiliate_map.keys())
+        vestigingen
     )
+
+    if vestiging == "— Kies een vestiging —":
+        st.info("Selecteer eerst een vestiging om data te laden")
+        st.stop()
 
     affiliate_id = affiliate_map[vestiging]
     data = load_data_for_affiliate(affiliate_id, vestiging)
