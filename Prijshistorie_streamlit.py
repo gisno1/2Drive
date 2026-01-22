@@ -15,10 +15,10 @@ class APIClient:
         #     'grant_type': 'client_credentials'
         # }
         self.auth_credentials = {
-            'client_id': st.secrets["auth"]["client_id"],
-            'client_secret': st.secrets["auth"]["client_secret"],
-            'audience': st.secrets["auth"]["audience"],
-            'grant_type': st.secrets["auth"]["grant_type"]
+            'client_id': st.secrets["auth0"]["client_id"],
+            'client_secret': st.secrets["auth0"]["client_secret"],
+            'audience': st.secrets["auth0"]["audience"],
+            'grant_type': st.secrets["auth0"]["grant_type"]
         }
         self.access_token = None
         self.token_expiry = None  
