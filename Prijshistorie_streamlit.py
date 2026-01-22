@@ -8,18 +8,18 @@ class APIClient:
     def __init__(self):
         self.api_base_url = 'https://app-2drive-dab2-100330.proudwave-fe47a2ed.westeurope.azurecontainerapps.io/api'
         self.auth_url = 'https://vinacles.eu.auth0.com/oauth/token'
-        # self.auth_credentials = {
-        #     'client_id': 'NlZMoM5v9XBGMpXrRKzqgzzviSZUs9Dp',
-        #     'client_secret': 's_qkClB-Ms8Kzzd17HftdZVHeR1lnp9QWFyroJ0PRNIkN0cxieJm9Mc8YeJ82YYZ',
-        #     'audience': 'api:vinalces.dab.100330',
-        #     'grant_type': 'client_credentials'
-        # }
         self.auth_credentials = {
-            'client_id': st.secrets["auth0"]["client_id"],
-            'client_secret': st.secrets["auth0"]["client_secret"],
-            'audience': st.secrets["auth0"]["audience"],
-            'grant_type': st.secrets["auth0"]["grant_type"]
+            'client_id': 'NlZMoM5v9XBGMpXrRKzqgzzviSZUs9Dp',
+            'client_secret': 's_qkClB-Ms8Kzzd17HftdZVHeR1lnp9QWFyroJ0PRNIkN0cxieJm9Mc8YeJ82YYZ',
+            'audience': 'api:vinalces.dab.100330',
+            'grant_type': 'client_credentials'
         }
+        # self.auth_credentials = {
+        #     'client_id': st.secrets["auth0"]["client_id"],
+        #     'client_secret': st.secrets["auth0"]["client_secret"],
+        #     'audience': st.secrets["auth0"]["audience"],
+        #     'grant_type': st.secrets["auth0"]["grant_type"]
+        # }
         self.access_token = None
         self.token_expiry = None  
 
