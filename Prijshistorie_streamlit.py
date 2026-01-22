@@ -141,15 +141,15 @@ def main():
             st.warning("Geen data beschikbaar voor deze vestiging")
             st.stop()
 
-        onderdeelnummer = st.text_input('Voer het onderdeelnummer in:')
-        if onderdeelnummer:
-            history = get_price_history(data, onderdeelnummer)
-            if history is not None:
-                st.write(f'Prijshistorie voor onderdeelnummer {onderdeelnummer}:')
-                history.index = range(1, len(history)+1)
-                st.dataframe(history)
-            else:
-                st.write(f'Geen resultaten gevonden voor onderdeelnummer {onderdeelnummer}.')
+    onderdeelnummer = st.text_input('Voer het onderdeelnummer in:')
+    if onderdeelnummer:
+        history = get_price_history(data, onderdeelnummer)
+        if history is not None:
+            st.write(f'Prijshistorie voor onderdeelnummer {onderdeelnummer}:')
+            history.index = range(1, len(history)+1)
+            st.dataframe(history)
+        else:
+            st.write(f'Geen resultaten gevonden voor onderdeelnummer {onderdeelnummer}.')
 
 if __name__ == '__main__':
     main()
