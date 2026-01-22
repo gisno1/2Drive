@@ -222,7 +222,8 @@ def main():
         if st.button("Inloggen"):
             if password_input == correct_password:
                 st.session_state.authenticated = True
-                st.experimental_rerun()  
+                # st.experimental_rerun()  
+                st.rerun() 
             else:
                 st.warning("Onjuist wachtwoord. Probeer opnieuw.")
                 st.session_state.authenticated = False
