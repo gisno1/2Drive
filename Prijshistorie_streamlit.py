@@ -82,94 +82,36 @@ class APIClient:
 
 
 
-    def get_parts(self):
-        """Haalt onderdelen op en voegt de InvoicedDate toe."""
+    def get_parts_for_affiliate(self, affiliate_id, label):
 
-        # def safe_get(endpoint, columns=None, label=""):
-        #     df = self.get_data(endpoint)
-        #     if df is None:
-        #         st.warning(f"⚠️ Geen data ontvangen voor {label}")
-        #         return self.empty_df(columns or [])
-        #     return df
-
-        def safe_get(endpoint, columns=None, label="", retries=4, delay=2):
-            for attempt in range(1, retries + 1):
-                df = self.get_data(endpoint)
-
-                if df is not None:
-                    return df
-
-                if attempt < retries:
-                    #st.info(f"🔄 {label}: poging {attempt + 1} van {retries}...")
-                    time.sleep(delay * attempt)  # exponential backoff
-
-            st.warning(f"⚠️ Geen data ontvangen voor {label} na {retries} pogingen")
-            
-            return self.empty_df(columns or [])
-
-        # Workorders
-        wo_259 = safe_get(
-            'GetAftersalesForAffiliateExtended?AffiliateId=259',
-            ['WONUMMER', 'InvoicedDate'],
-            'Werkorders Tilburg'
-        )[['WONUMMER', 'InvoicedDate']]
-
-        time.sleep(1)
-
-        wo_261 = safe_get(
-            'GetAftersalesForAffiliateExtended?AffiliateId=261',
-            ['WONUMMER', 'InvoicedDate'],
-            'Werkorders Rotterdam'
-        )[['WONUMMER', 'InvoicedDate']]
-
-        time.sleep(0.5)
-
-        wo_467 = safe_get(
-            'GetAftersalesForAffiliateExtended?AffiliateId=467',
-            ['WONUMMER', 'InvoicedDate'],
-            'Werkorders Heerhugowaard'
-        )[['WONUMMER', 'InvoicedDate']]
-
-        # Onderdelen
-        onderdelen_259 = safe_get(
-            'GetAftersalesPartsForAffiliateExtended?AffiliateId=259',
-            ['WONUMMER', 'AffiliateId'],
-            'Onderdelen Tilburg'
-        ).merge(wo_259, on='WONUMMER', how='left')
-
-        onderdelen_261 = safe_get(
-            'GetAftersalesPartsForAffiliateExtended?AffiliateId=261',
-            ['WONUMMER', 'AffiliateId'],
-            'Onderdelen Rotterdam'
-        ).merge(wo_261, on='WONUMMER', how='left')
-
-        onderdelen_467 = safe_get(
-            'GetAftersalesPartsForAffiliateExtended?AffiliateId=467',
-            ['WONUMMER', 'AffiliateId'],
-            'Onderdelen Heerhugowaard'
-        ).merge(wo_467, on='WONUMMER', how='left')
-
-        df = pd.concat(
-            [onderdelen_259, onderdelen_261, onderdelen_467],
-            ignore_index=True
+        wo = self.get_data(
+            f'GetAftersalesForAffiliateExtended?AffiliateId={affiliate_id}'
         )
 
-        if df.empty:
-            st.warning("⚠️ Er is geen enkele onderdelen-data beschikbaar.")
-            return df
+        if wo is None:
+            st.warning(f"⚠️ Werkorders niet geladen ({label})")
+            return pd.DataFrame()
 
-        affiliate_mapping = {
-            259: 'Tilburg',
-            261: 'Rotterdam',
-            467: 'Heerhugowaard'
-        }
+        wo = wo[['WONUMMER', 'InvoicedDate']]
 
-        df['AffiliateId'] = df['AffiliateId'].replace(affiliate_mapping)
+        time.sleep(0.4)
 
+        onderdelen = self.get_data(
+            f'GetAftersalesPartsForAffiliateExtended?AffiliateId={affiliate_id}'
+        )
+
+        if onderdelen is None:
+            st.warning(f"⚠️ Onderdelen niet geladen ({label})")
+            return pd.DataFrame()
+
+        df = onderdelen.merge(wo, on='WONUMMER', how='left')
+
+        df['AffiliateId'] = label
         df['InvoicedDate'] = pd.to_datetime(
             df['InvoicedDate'], errors='coerce'
         ).dt.strftime('%d-%m-%Y')
 
+        
         df = df.rename(columns={
             'PartNumber': 'Onderdeelnummer',
             'Price': 'Verkoopprijs',
@@ -179,6 +121,7 @@ class APIClient:
         })
 
         return df
+
 
 
     def get_price_history(self, df, onderdeelnummer):
@@ -201,10 +144,9 @@ def get_api_client():
 
 
 @st.cache_data(ttl=3600)
-def load_data():
-    """Laadt de data eenmalig en cache deze."""
+def load_data_for_affiliate(affiliate_id, label):
     client = get_api_client()
-    return client.get_parts()
+    return client.get_parts_for_affiliate(affiliate_id, label)
 
 
 def main():
@@ -229,11 +171,23 @@ def main():
                 st.session_state.authenticated = False
         return  
     
-    data = load_data()
+    affiliate_map = {
+        "Tilburg": 259,
+        "Rotterdam": 261,
+        "Heerhugowaard": 467
+    }
 
-    if data is None or data.empty:
-        st.error("❌ Geen data beschikbaar. Probeer het later opnieuw.")
-        return
+    vestiging = st.selectbox(
+        "Kies een vestiging",
+        list(affiliate_map.keys())
+    )
+
+    affiliate_id = affiliate_map[vestiging]
+    data = load_data_for_affiliate(affiliate_id, vestiging)
+
+    if data.empty:
+        st.warning("Geen data beschikbaar voor deze vestiging")
+        st.stop()
 
 
     onderdeelnummer = st.text_input('Voer het onderdeelnummer in:')
