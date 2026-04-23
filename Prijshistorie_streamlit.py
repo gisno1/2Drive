@@ -92,7 +92,7 @@ def load_parts_for_affiliate(affiliate_id, label):
         )
 
     # Filter op datum > 01-05-2025
-    df = df[df['InvoicedDate'] > '2025-05-01']
+    df = df[df['InvoicedDate'] > '2025-07-01']
 
     # Format weer naar string
     df['InvoicedDate'] = df['InvoicedDate'].dt.strftime('%d-%m-%Y')
