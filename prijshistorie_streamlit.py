@@ -85,8 +85,8 @@ def load_parts_for_affiliate(affiliate_id, label):
     df = df[df['InvoicedDate'] > pd.Timestamp('2025-05-01')]
 
     # 3. Dan pas formatteren naar string
-    df['InvoicedDate'] = df['InvoicedDate'].dt.strftime('%d-%m-%Y')
-        
+    df = df.dropna(subset=['InvoicedDate'])
+    df = df[df['InvoicedDate'] > pd.Timestamp('2025-05-01')]        
     df = df.rename(columns={
         'PartNumber': 'Onderdeelnummer',
         'Price': 'Verkoopprijs',
