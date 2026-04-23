@@ -78,12 +78,13 @@ def load_parts_for_affiliate(affiliate_id, label):
 
     df = onderdelen.merge(wo, on='WONUMMER', how='left')
     df['AffiliateId'] = label
-    df['InvoicedDate'] = pd.to_datetime(df['InvoicedDate'], errors='coerce').dt.strftime('%d-%m-%Y')
+    # 1. Eerst naar datetime (GEEN strftime hier!)
+    df['InvoicedDate'] = pd.to_datetime(df['InvoicedDate'], errors='coerce')
 
-     # Filter op datum > 01-05-2025
-    df = df[df['InvoicedDate'] > '2025-05-01']
+    # 2. Dan filteren
+    df = df[df['InvoicedDate'] > pd.Timestamp('2025-05-01')]
 
-    # Format weer naar string
+    # 3. Dan pas formatteren naar string
     df['InvoicedDate'] = df['InvoicedDate'].dt.strftime('%d-%m-%Y')
         
     df = df.rename(columns={
