@@ -52,7 +52,11 @@ def get_data(endpoint, retries=5, delay=2):
 # --- Werkorders laden per vestiging ---
 @st.cache_data(ttl=3600)
 def load_werkorders(affiliate_id):
-    df = get_data(f'GetAftersalesForAffiliateExtended?AffiliateId={affiliate_id}')
+    if affiliate_id == 259:
+        df = pd.read_excel('wo tilburg.xlsx')
+    else:
+        df = get_data(f'GetAftersalesForAffiliateExtended?AffiliateId={affiliate_id}')
+        
     if not df.empty:
         df = df[['WONUMMER', 'InvoicedDate']]
     return df
@@ -60,7 +64,10 @@ def load_werkorders(affiliate_id):
 # --- Onderdelen laden per vestiging ---
 @st.cache_data(ttl=3600)
 def load_onderdelen(affiliate_id):
-    df = get_data(f'GetAftersalesPartsForAffiliateExtended?AffiliateId={affiliate_id}')
+    if affiliate_id == 259:
+        df = pd.read_excel('onderdelen tilburg.xlsx')  
+    else:
+        df = get_data(f'GetAftersalesPartsForAffiliateExtended?AffiliateId={affiliate_id}')
     return df
 
 # --- Samengevoegde data per vestiging ---
@@ -92,7 +99,9 @@ def load_parts_for_affiliate(affiliate_id, label):
         )
 
     # Filter op datum > 01-05-2025
-    df = df[df['InvoicedDate'] > '2025-07-01']
+    if affiliate_id == 259:  # Tilburg
+        df = df[df['InvoicedDate'] > '2025-10-01']
+   
 
     # Format weer naar string
     df['InvoicedDate'] = df['InvoicedDate'].dt.strftime('%d-%m-%Y')
